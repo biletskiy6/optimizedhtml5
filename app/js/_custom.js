@@ -1,5 +1,7 @@
-document.addEventListener("DOMContentLoaded", function() {
-
-	// Custom JS
+$(function() {
+	svg4everybody();
 
 });
+
+
+

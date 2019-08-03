@@ -9,7 +9,11 @@ var gulp         = require('gulp'),
 		newer        = require('gulp-newer'),
 		rename       = require('gulp-rename'),
 		responsive   = require('gulp-responsive'),
-		del          = require('del');
+		del          = require('del'),
+		svgSprite		 = require('gulp-svg-sprite'),
+		svgmin 			 = require('gulp-svgmin'),
+		cheerio 		 = require('gulp-cheerio'),
+		replace 		 = require('gulp-replace');
 
 // Local Server
 gulp.task('browser-sync', function() {
@@ -44,6 +48,7 @@ gulp.task('scripts', function() {
 		// 'node_modules/jquery/dist/jquery.min.js', // Optional jQuery plug-in (npm i --save-dev jquery)
 		'app/js/_lazy.js', // JS library plug-in example
 		'app/js/_custom.js', // Custom scripts. Always at the end
+		'node_modules/svg4everybody/dist/svg4everybody.min.js',
 		])
 	.pipe(concat('scripts.min.js'))
 	.pipe(uglify()) // Minify js (opt.)
@@ -96,6 +101,37 @@ gulp.task('rsync', function() {
 	}))
 });
 
+// Creating of SVG sprite
+
+
+gulp.task("svgSpriteBuild", function() {
+
+	return gulp.src('app/img/svg/**/*.svg')
+		.pipe(svgmin({
+			js2svg: {
+				pretty: true
+			}
+		}))
+		.pipe(cheerio({
+			run: function ($) {
+				$('[fill]').removeAttr('fill');
+				$('[stroke]').removeAttr('stroke');
+				$('[style]').removeAttr('style');
+			},
+			parserOptions: {xmlMode: true}
+		}))
+		.pipe(replace('&gt;', '>'))
+		.pipe(svgSprite({
+			mode: {
+				symbol: {
+					sprite: "../sprite.svg",
+				}
+			}
+		}))
+		.pipe(gulp.dest('app/img/svg/sprite/'));
+});
+
+
 gulp.task('watch', function() {
 	gulp.watch('app/sass/**/*.sass', gulp.parallel('styles'));
 	gulp.watch(['libs/**/*.js', 'app/js/_custom.js'], gulp.parallel('scripts'));
@@ -103,4 +139,4 @@ gulp.task('watch', function() {
 	gulp.watch('app/img/_src/**/*', gulp.parallel('img'));
 });
 
-gulp.task('default', gulp.parallel('img', 'styles', 'scripts', 'browser-sync', 'watch'));
+gulp.task('default', gulp.parallel('img', 'svgSpriteBuild', 'styles', 'scripts', 'browser-sync', 'watch'));
